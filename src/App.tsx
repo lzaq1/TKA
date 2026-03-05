@@ -19,79 +19,14 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-
-// --- Types ---
-interface Question {
-  id: string;
-  questionText: string;
-  options: string[];
-  correctAnswerIndex: number;
-  explanation: string;
-  hint: string;
-  imageUrl?: string;
-}
-
-interface PuzzlePack {
-  id: string;
-  title: string;
-  description: string;
-  imageUrl: string;
-  questions: Question[];
-  difficulty: 'Easy' | 'Medium' | 'Hard';
-  isLocked?: boolean;
-}
+import ReactMarkdown from 'react-markdown';
+import { PUZZLE_PACKS } from './data/puzzles';
+import { PuzzlePack, Question } from './types';
 
 // --- Utility ---
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
-
-// --- Data ---
-const PUZZLE_PACKS: PuzzlePack[] = [
-  {
-    id: 'logic-1',
-    title: 'Logic Master',
-    description: 'Test your deductive reasoning with these classic logic puzzles.',
-    difficulty: 'Medium',
-    imageUrl: 'https://images.unsplash.com/photo-1532012197267-da84d127e765?auto=format&fit=crop&q=80&w=800',
-    questions: [
-      {
-        id: 'l1',
-        questionText: 'If all Bloops are Razzies and all Razzies are Lazzies, are all Bloops definitely Lazzies?',
-        options: ['Yes', 'No', 'Maybe', 'Only on Tuesdays'],
-        correctAnswerIndex: 0,
-        explanation: 'This is a transitive relation. If A=B and B=C, then A=C.',
-        hint: 'Think about the chain: Bloops -> Razzies -> Lazzies.'
-      },
-      {
-        id: 'l2',
-        questionText: 'A man looks at a portrait and says: "Brothers and sisters I have none, but that man\'s father is my father\'s son." Who is in the portrait?',
-        options: ['His Father', 'His Son', 'Himself', 'His Uncle'],
-        correctAnswerIndex: 1,
-        explanation: '"My father\'s son" (with no siblings) is the man himself. So, the man\'s father is HIM. Therefore, the portrait is of his son.',
-        hint: 'Break down "my father\'s son" first. If he has no siblings, who is that?'
-      }
-    ]
-  },
-  {
-    id: 'visual-1',
-    title: 'Pattern Seeker',
-    description: 'Identify the missing piece in these visual sequences.',
-    difficulty: 'Hard',
-    imageUrl: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&q=80&w=800',
-    questions: [
-      {
-        id: 'v1',
-        questionText: 'Which shape completes the sequence? (Look closely at the pattern)',
-        imageUrl: 'https://picsum.photos/seed/pattern1/800/400',
-        options: ['Circle', 'Square', 'Triangle', 'Hexagon'],
-        correctAnswerIndex: 3,
-        explanation: 'The number of sides increases by one in each step.',
-        hint: 'Count the number of sides on each shape in the sequence.'
-      }
-    ]
-  }
-];
 
 const SOUND_EFFECTS = {
   click: "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3",
@@ -307,11 +242,12 @@ export default function App() {
     if (isCorrect) {
       if (!hasRetriedCurrentQuestion) {
         setScore(s => s + 100);
+      } else {
+        setScore(s => s + 50);
       }
       playSound('correct');
     } else {
       if (!hasRetriedCurrentQuestion) {
-        setScore(s => s + 50);
         setHasRetriedCurrentQuestion(true);
       }
       playSound('incorrect');
@@ -616,9 +552,11 @@ export default function App() {
                       </div>
                     )}
                     
-                    <h3 className="text-3xl md:text-4xl font-black text-white text-center leading-tight max-w-3xl">
-                      {currentQuestion.questionText}
-                    </h3>
+                    <div className="text-3xl md:text-4xl font-black text-white text-left leading-tight max-w-3xl prose prose-invert prose-lg prose-p:my-2 prose-strong:text-amber-400">
+                      <ReactMarkdown>
+                        {currentQuestion.questionText}
+                      </ReactMarkdown>
+                    </div>
                   </div>
                 </div>
 
@@ -821,7 +759,7 @@ export default function App() {
                           transition={{ delay: 0.7 }}
                           className="text-[10rem] font-black text-amber-400 tracking-tighter drop-shadow-[0_0_30px_rgba(251,191,36,0.5)]"
                         >
-                          {score * 100}
+                          {score}
                         </motion.span>
                         <span className="text-3xl font-black text-white/40 -mt-6">
                           OUT OF {(selectedPack?.questions.length || 0) * 100}
@@ -830,8 +768,9 @@ export default function App() {
                         <div className="mt-12 flex gap-4">
                           {Array.from({ length: 5 }).map((_, i) => {
                             const maxPossibleScore = (selectedPack?.questions.length || 0) * 100;
-                            const starThreshold = (maxPossibleScore / 5) * (i + 1);
-                            const isFilled = score >= starThreshold;
+                            const percentage = maxPossibleScore > 0 ? score / maxPossibleScore : 0;
+                            const starsEarned = Math.round(percentage * 5);
+                            const isFilled = i < starsEarned;
                             
                             return (
                               <motion.div

@@ -8,6 +8,7 @@ export interface Question {
   options: string[];
   correctAnswerIndex: number;
   explanation: string;
+  hint?: string;
 }
 
 export interface PuzzlePack {
@@ -19,6 +20,7 @@ export interface PuzzlePack {
   imageUrl: string;
   challengesCount: number;
   questions: Question[];
+  difficulty: 'Easy' | 'Medium' | 'Hard';
   isLocked?: boolean;
   requiredLevel?: number;
   progress?: number;
